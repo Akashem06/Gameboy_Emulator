@@ -1,86 +1,82 @@
+#include "gameboy.hpp"
+
 #include <stdbool.h>
+
 #include <cstdio>
 
 #include "common.hpp"
 #include "sdl_ui.hpp"
-#include "gameboy.hpp"
-#include "cartridge.hpp"
-#include "cpu.hpp"
 
-Gameboy::Gameboy() {
-    paused = false;
-    running = false;
-    ticks = 0U;
+Gameboy::Gameboy() : cpu(&mem_ctrl), mem_ctrl(&cpu, &cartridge), cartridge() {
+  paused = false;
+  running = false;
+  ticks = 0U;
 }
 
 int Gameboy::run(int argc, char **argv) {
-    if (argv == nullptr) {
-        return -1;
+  if (argv == nullptr) {
+    return -1;
+  }
+
+  if (argc < 2) {
+    printf("ERROR: Did not receive ROM file name\n");
+    return -2;
+  }
+
+  if (!cartridge.readInfo(argv[1])) {
+    printf("Failed to load ROM file: %s\n", argv[1]);
+    return -3;
+  }
+
+  printf("Cart loaded..\n");
+
+  SDLUI ui = SDLUI();
+
+  cpu.init();
+
+  running = true;
+  paused = false;
+  ticks = 0;
+
+  while (running) {
+    if (paused) {
+      delay_ms(10);
+      continue;
     }
 
-    if (argc < 2) {
-        printf("ERROR: Did not receive ROM file name\n");
-        return -2;
+    if (!cpu.step()) {
+      printf("CPU Stopped\n");
+      return -4;
     }
 
-    Cartridge cartridge = Cartridge();
-    CPU cpu = CPU();
+    ticks++;
+  }
 
-    printf("%s", argv[1]);
-
-    if (!cartridge.readInfo(argv[1])) {
-        printf("Failed to load ROM file: %s\n", argv[1]);
-        return -3;
-    }
-    printf("Cart loaded..\n");
-
-    SDLUI ui = SDLUI();
-
-    cpu.init();
-
-    running = true;
-    paused = false;
-    ticks = 0;
-
-    while (running) {
-        if (paused) {
-            delay_ms(10);
-            continue;
-        }
-
-        if (!cpu.step()) {
-            printf("CPU Stopped\n");
-            return -4;
-        }
-
-        ticks++;
-    }
-
-    return 0;
+  return 0;
 }
 
 void Gameboy::reset() {
-    paused = false;
-    running = false;
-    ticks = 0U;
+  paused = false;
+  running = false;
+  ticks = 0U;
 }
 
 bool Gameboy::isPaused() const {
-    return paused;
+  return paused;
 }
 
 bool Gameboy::isRunning() const {
-    return running;
+  return running;
 }
 
 u64 Gameboy::getTicks() const {
-    return ticks;
+  return ticks;
 }
 
 void Gameboy::pause() {
-    paused = true;
+  paused = true;
 }
 
 void Gameboy::abort() {
-    running = false;
+  running = false;
 }

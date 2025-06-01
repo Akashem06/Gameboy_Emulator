@@ -1,26 +1,26 @@
-#include <fstream>
-
 #include "files.hpp"
 
-void File::read_file(const std::string &filename, std::vector<u8>& data) {
-    /* Open the file in binary mode */
-    std::ifstream file(filename, std::ios::binary);
+#include <fstream>
 
-    if (!file) {
-        throw std::runtime_error("Could not open file: " + filename);
-    }
+void File::read_file(const std::string &filename, std::vector<u8> &data) {
+  /* Open the file in binary mode */
+  std::ifstream file(filename, std::ios::binary);
 
-    file.seekg(0, std::ios::end);
-    std::streampos fileSize = file.tellg();
+  if (!file) {
+    throw std::runtime_error("Could not open file: " + filename);
+  }
 
-    file.seekg(0, std::ios::beg);
+  file.seekg(0, std::ios::end);
+  std::streampos fileSize = file.tellg();
 
-    data.resize(fileSize);
-    file.read(reinterpret_cast<char*>(data.data()), fileSize);
+  file.seekg(0, std::ios::beg);
 
-    if (!file) {
-        throw std::runtime_error("Error reading file: " + filename);
-    }
+  data.resize(fileSize);
+  file.read(reinterpret_cast<char *>(data.data()), fileSize);
 
-    file.close();
+  if (!file) {
+    throw std::runtime_error("Error reading file: " + filename);
+  }
+
+  file.close();
 }

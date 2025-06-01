@@ -1,5 +1,10 @@
-#include "common.hpp"
+#pragma once
+
 #include <vector>
+
+#include "cartridge.hpp"
+#include "common.hpp"
+#include "mem.h"
 
 /*--------------------- CATRIDGE ROM ---------------------*/
 /* 0x0000 - 0x3FFF : ROM Bank 0. */
@@ -24,17 +29,23 @@
 /* 0xFF00 - 0xFF7F : I/O Registers */
 /* 0xFF80 - 0xFFFE : Zero Page */
 
-#define MEMORY_IN_RANGE(address, lower, upper) (address >= lower && address <= upper? true : false)
-
-using Address = u16;
+class CPU;
 
 class MemoryController {
-    private:
-        std::vector<u8> work_ram;
-        std::vector<u8> oam_ram;
-        std::vector<u8> high_ram;
-    public:
-        MemoryController();
-        u8 read(const Address address);
-        void write(const Address address, u8 byte);
+ private:
+  CPU *cpu;
+  Cartridge *cartridge;
+
+  std::vector<u8> work_ram;
+  std::vector<u8> oam_ram;
+  std::vector<u8> high_ram;
+
+ public:
+  MemoryController(CPU *cpu, Cartridge *cartridge);
+
+  u8 read(const Address address);
+  void write(const Address address, u8 byte);
+
+  u8 read_io(const Address address);
+  void write_io(const Address address, u8 byte);
 };

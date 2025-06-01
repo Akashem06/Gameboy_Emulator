@@ -17,6 +17,7 @@ include_directories(
   ${PROJECT_SOURCE_DIR}/main
   ${PROJECT_SOURCE_DIR}/utils
   ${PROJECT_SOURCE_DIR}/video
+  ${PROJECT_SOURCE_DIR}/mem
 )
 
 ######################## Source/Header files for each components ########################
@@ -38,6 +39,9 @@ file(GLOB UTILS_HEADERS "${PROJECT_SOURCE_DIR}/utils/*.hpp")
 file(GLOB VIDEO_SOURCES "${PROJECT_SOURCE_DIR}/video/*.cpp")
 file(GLOB VIDEO_HEADERS "${PROJECT_SOURCE_DIR}/video/*.hpp")
 
+file(GLOB MEM_SOURCES "${PROJECT_SOURCE_DIR}/mem/*.cpp")
+file(GLOB MEM_HEADERS "${PROJECT_SOURCE_DIR}/mem/*.hpp")
+
 ################################## Combine all sources ##################################
 set(SOURCES
     ${MAIN_SOURCES}
@@ -46,6 +50,7 @@ set(SOURCES
     ${LIB_SOURCES}
     ${UTILS_SOURCES}
     ${VIDEO_SOURCES}
+    ${MEM_SOURCES}
 )
 
 set(HEADERS
@@ -55,6 +60,7 @@ set(HEADERS
     ${LIB_HEADERS}
     ${UTILS_HEADERS}
     ${VIDEO_HEADERS}
+    ${MEM_HEADERS}
 )
 
 add_executable(gameboy_emulator ${SOURCES} ${HEADERS})
@@ -64,4 +70,11 @@ target_compile_options(gameboy_emulator PRIVATE -Wall -Wextra -Wpedantic)
 
 install(TARGETS gameboy_emulator
     RUNTIME DESTINATION bin
+)
+
+############################### Custom targets ###############################
+add_custom_target(format
+    COMMAND find .. -type f -name "*.cpp" -exec clang-format -i -style=file {} +
+    COMMAND find .. -type f -name "*.hpp" -exec clang-format -i -style=file {} +
+    COMMENT "Formatting source files..."
 )
