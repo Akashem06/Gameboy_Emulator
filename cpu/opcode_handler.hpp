@@ -1,6 +1,7 @@
 #pragma once
 
 #include "condition.hpp"
+#include "cycles.hpp"
 #include "mem.h"
 #include "register.hpp"
 #include "rst.hpp"
@@ -682,6 +683,6 @@ class OpcodeHandler {
  public:
   OpcodeHandler(CPU *cpu);
 
-  void handle_opcode(u8 opcode);
-  void handle_cb_opcode(u8 cb_opcode);
+  Cycles handle_opcode(u8 opcode);
+  Cycles handle_cb_opcode(u8 cb_opcode);
 };

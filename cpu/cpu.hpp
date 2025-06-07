@@ -1,6 +1,7 @@
 #pragma once
 
 #include "common.hpp"
+#include "interrupts.hpp"
 #include "memory_controller.hpp"
 #include "opcode_handler.hpp"
 #include "register.hpp"
@@ -17,8 +18,6 @@ class CPU {
   Register8 e; /**< Register E */
   Register8 h; /**< Register H */
   Register8 l; /**< Register L */
-
-  bool branch_taken = false;
 
   OpcodeHandler opcode_handler;
 
@@ -38,7 +37,8 @@ class CPU {
   void execute_cb(u8 opcode);  // Execute CB-prefixed instructions
 
   // Interrupt Handling
-  void handle_interrupts();                  // Check and handle pending interrupts
+  void handle_interrupts();  // Check and handle pending interrupts
+  bool handle_interrupt(interrupts::flags flag, interrupts::vector vector, u8 fired_interrupts);
   void request_interrupt(u8 interrupt_bit);  // Request a specific interrupt
 
  public:
@@ -48,6 +48,7 @@ class CPU {
   Register8 interrupt_enabled_reg;
   bool interrupts_enabled = false;
   bool halted = false;
+  bool branch_taken = false;
 
   RegisterPair af; /**< Accumlator & Flags */
   RegisterPair bc; /**< B - 8-bit HI, C - 8-bit LO */

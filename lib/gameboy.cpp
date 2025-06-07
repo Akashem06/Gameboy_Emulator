@@ -5,6 +5,7 @@
 #include <cstdio>
 
 #include "common.hpp"
+#include "log.hpp"
 #include "sdl_ui.hpp"
 
 Gameboy::Gameboy() : cpu(&mem_ctrl), mem_ctrl(&cpu, &cartridge), cartridge() {
@@ -19,16 +20,16 @@ int Gameboy::run(int argc, char **argv) {
   }
 
   if (argc < 2) {
-    printf("ERROR: Did not receive ROM file name\n");
+    log_error("ERROR: Did not receive ROM file name\n");
     return -2;
   }
 
   if (!cartridge.readInfo(argv[1])) {
-    printf("Failed to load ROM file: %s\n", argv[1]);
+    log_error("Failed to load ROM file: %s\n", argv[1]);
     return -3;
   }
 
-  printf("Cart loaded..\n");
+  log_info("Cart loaded..\n");
 
   SDLUI ui = SDLUI();
 
@@ -45,7 +46,7 @@ int Gameboy::run(int argc, char **argv) {
     }
 
     if (!cpu.step()) {
-      printf("CPU Stopped\n");
+      log_info("CPU Stopped\n");
       return -4;
     }
 

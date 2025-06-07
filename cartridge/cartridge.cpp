@@ -1,6 +1,7 @@
 #include "cartridge.hpp"
 
 #include "files.hpp"
+#include "log.hpp"
 
 static std::string s_getTitle(std::vector<u8> &rom_data) {
   char name[CARTRIDGE_TITLE_LENGTH] = { 0U };
@@ -230,7 +231,7 @@ bool Cartridge::readInfo(const std::string &filename) {
   File::read_file(filename, rom_data);
 
   if (!s_checkHeaderChecksum(rom_data)) {
-    printf("Invalid header checksum.\n");
+    log_error("Invalid header checksum.\n");
   }
 
   title = s_getTitle(rom_data);
@@ -239,18 +240,15 @@ bool Cartridge::readInfo(const std::string &filename) {
   rom_size = s_getROMSize(rom_data);
   ram_size = s_getRAMSize(rom_data);
 
-  supports_cgb =
-      rom_data[CartridgeHeader::cgb_flag] == 0x80U || rom_data[CartridgeHeader::cgb_flag] == 0xC0U
-          ? true
-          : false;
+  supports_cgb = rom_data[CartridgeHeader::cgb_flag] == 0x80U || rom_data[CartridgeHeader::cgb_flag] == 0xC0U ? true : false;
   supports_sgb = rom_data[CartridgeHeader::sgb_flag] == 0x03U ? true : false;
 
   ram_banks.resize(getRAMByteSize(), 0U);
 
-  printf("Name: %s\n\r", title.c_str());
-  printf("Type: %d\n", (int)type);
-  printf("Rom size: %d\n", (int)rom_size);
-  printf("Ram size: %d\n", (int)ram_size);
+  log_debug("Name: %s\n\r", title.c_str());
+  log_debug("Type: %d\n", (int)type);
+  log_debug("Rom size: %d\n", (int)rom_size);
+  log_debug("Ram size: %d\n", (int)ram_size);
 
   return true;
 }

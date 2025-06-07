@@ -1,10 +1,17 @@
 #include "opcode_handler.hpp"
 
+#include "cpu.hpp"
+#include "log.hpp"
+#include "opcode_cycles.hpp"
+#include "opcode_names.hpp"
+
 OpcodeHandler::OpcodeHandler(CPU *cpu) : cpu(cpu) {}
 
 // clang-format off
 
-void OpcodeHandler::handle_opcode(u8 opcode) {
+Cycles OpcodeHandler::handle_opcode(u8 opcode) {
+  log_trace("%s (0x%x)", opcode_names[opcode].c_str(), opcode);
+
   switch (opcode) {
         case 0x00U: opcode_00(); break; case 0x01U: opcode_01(); break; case 0x02U: opcode_02(); break; case 0x03U: opcode_03(); break; case 0x04U: opcode_04(); break; case 0x05U: opcode_05(); break; case 0x06U: opcode_06(); break; case 0x07U: opcode_07(); break; case 0x08U: opcode_08(); break; case 0x09U: opcode_09(); break; case 0x0AU: opcode_0A(); break; case 0x0BU: opcode_0B(); break; case 0x0CU: opcode_0C(); break; case 0x0DU: opcode_0D(); break; case 0x0EU: opcode_0E(); break; case 0x0FU: opcode_0F(); break;
         case 0x10U: opcode_10(); break; case 0x11U: opcode_11(); break; case 0x12U: opcode_12(); break; case 0x13U: opcode_13(); break; case 0x14U: opcode_14(); break; case 0x15U: opcode_15(); break; case 0x16U: opcode_16(); break; case 0x17U: opcode_17(); break; case 0x18U: opcode_18(); break; case 0x19U: opcode_19(); break; case 0x1AU: opcode_1A(); break; case 0x1BU: opcode_1B(); break; case 0x1CU: opcode_1C(); break; case 0x1DU: opcode_1D(); break; case 0x1EU: opcode_1E(); break; case 0x1FU: opcode_1F(); break;
@@ -23,9 +30,13 @@ void OpcodeHandler::handle_opcode(u8 opcode) {
         case 0xE0U: opcode_E0(); break; case 0xE1U: opcode_E1(); break; case 0xE2U: opcode_E2(); break; case 0xE3U: opcode_E3(); break; case 0xE4U: opcode_E4(); break; case 0xE5U: opcode_E5(); break; case 0xE6U: opcode_E6(); break; case 0xE7U: opcode_E7(); break; case 0xE8U: opcode_E8(); break; case 0xE9U: opcode_E9(); break; case 0xEAU: opcode_EA(); break; case 0xEBU: opcode_EB(); break; case 0xECU: opcode_EC(); break; case 0xEDU: opcode_ED(); break; case 0xEEU: opcode_EE(); break; case 0xEFU: opcode_EF(); break;
         case 0xF0U: opcode_F0(); break; case 0xF1U: opcode_F1(); break; case 0xF2U: opcode_F2(); break; case 0xF3U: opcode_F3(); break; case 0xF4U: opcode_F4(); break; case 0xF5U: opcode_F5(); break; case 0xF6U: opcode_F6(); break; case 0xF7U: opcode_F7(); break; case 0xF8U: opcode_F8(); break; case 0xF9U: opcode_F9(); break; case 0xFAU: opcode_FA(); break; case 0xFBU: opcode_FB(); break; case 0xFCU: opcode_FC(); break; case 0xFDU: opcode_FD(); break; case 0xFEU: opcode_FE(); break; case 0xFFU: opcode_FF(); break;
     }
+
+    return !cpu->branch_taken ? opcode_cycles[opcode] : opcode_cycles_branched[opcode];
 }
 
-void OpcodeHandler::handle_cb_opcode(u8 cb_opcode) {
+Cycles OpcodeHandler::handle_cb_opcode(u8 cb_opcode) {
+  log_trace("%s (CB 0x%x)", opcode_cb_names[cb_opcode].c_str(), cb_opcode);
+
   switch (cb_opcode) {
         case 0x00U: opcode_CB_00(); break; case 0x01U: opcode_CB_01(); break; case 0x02U: opcode_CB_02(); break; case 0x03U: opcode_CB_03(); break; case 0x04U: opcode_CB_04(); break; case 0x05U: opcode_CB_05(); break; case 0x06U: opcode_CB_06(); break; case 0x07U: opcode_CB_07(); break; case 0x08U: opcode_CB_08(); break; case 0x09U: opcode_CB_09(); break; case 0x0AU: opcode_CB_0A(); break; case 0x0BU: opcode_CB_0B(); break; case 0x0CU: opcode_CB_0C(); break; case 0x0DU: opcode_CB_0D(); break; case 0x0EU: opcode_CB_0E(); break; case 0x0FU: opcode_CB_0F(); break;
         case 0x10U: opcode_CB_10(); break; case 0x11U: opcode_CB_11(); break; case 0x12U: opcode_CB_12(); break; case 0x13U: opcode_CB_13(); break; case 0x14U: opcode_CB_14(); break; case 0x15U: opcode_CB_15(); break; case 0x16U: opcode_CB_16(); break; case 0x17U: opcode_CB_17(); break; case 0x18U: opcode_CB_18(); break; case 0x19U: opcode_CB_19(); break; case 0x1AU: opcode_CB_1A(); break; case 0x1BU: opcode_CB_1B(); break; case 0x1CU: opcode_CB_1C(); break; case 0x1DU: opcode_CB_1D(); break; case 0x1EU: opcode_CB_1E(); break; case 0x1FU: opcode_CB_1F(); break;
@@ -44,6 +55,8 @@ void OpcodeHandler::handle_cb_opcode(u8 cb_opcode) {
         case 0xE0U: opcode_CB_E0(); break; case 0xE1U: opcode_CB_E1(); break; case 0xE2U: opcode_CB_E2(); break; case 0xE3U: opcode_CB_E3(); break; case 0xE4U: opcode_CB_E4(); break; case 0xE5U: opcode_CB_E5(); break; case 0xE6U: opcode_CB_E6(); break; case 0xE7U: opcode_CB_E7(); break; case 0xE8U: opcode_CB_E8(); break; case 0xE9U: opcode_CB_E9(); break; case 0xEAU: opcode_CB_EA(); break; case 0xEBU: opcode_CB_EB(); break; case 0xECU: opcode_CB_EC(); break; case 0xEDU: opcode_CB_ED(); break; case 0xEEU: opcode_CB_EE(); break; case 0xEFU: opcode_CB_EF(); break;
         case 0xF0U: opcode_CB_F0(); break; case 0xF1U: opcode_CB_F1(); break; case 0xF2U: opcode_CB_F2(); break; case 0xF3U: opcode_CB_F3(); break; case 0xF4U: opcode_CB_F4(); break; case 0xF5U: opcode_CB_F5(); break; case 0xF6U: opcode_CB_F6(); break; case 0xF7U: opcode_CB_F7(); break; case 0xF8U: opcode_CB_F8(); break; case 0xF9U: opcode_CB_F9(); break; case 0xFAU: opcode_CB_FA(); break; case 0xFBU: opcode_CB_FB(); break; case 0xFCU: opcode_CB_FC(); break; case 0xFDU: opcode_CB_FD(); break; case 0xFEU: opcode_CB_FE(); break; case 0xFFU: opcode_CB_FF(); break;
     }
+
+    return opcode_cycles_cb[cb_opcode];
 }
 
 // clang-format on
