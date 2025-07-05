@@ -1,16 +1,19 @@
 #include "opcode_handler.hpp"
 
-#include "cpu.hpp"
+#include "gameboy.hpp"
 #include "log.hpp"
 #include "opcode_cycles.hpp"
 #include "opcode_names.hpp"
 
-OpcodeHandler::OpcodeHandler(CPU *cpu) : cpu(cpu) {}
+OpcodeHandler::OpcodeHandler() {}
 
 // clang-format off
 
 Cycles OpcodeHandler::handle_opcode(u8 opcode) {
-  log_trace("%s (0x%x)", opcode_names[opcode].c_str(), opcode);
+
+  // log_trace("%s (0x%x), Program counter: %u\r\n", opcode_names[opcode].c_str(), opcode, gameboy->get_cpu().pc);
+  // log_trace("Registers before execution: A=0x%02X F=0x%02X B=0x%02X C=0x%02X D=0x%02X E=0x%02X H=0x%02X L=0x%02X SP=0x%04X\r\n", 
+  // gameboy->get_cpu().a, gameboy->get_cpu().f, gameboy->get_cpu().b, gameboy->get_cpu().c, gameboy->get_cpu().d, gameboy->get_cpu().e, gameboy->get_cpu().h, gameboy->get_cpu().l, gameboy->get_cpu().sp);
 
   switch (opcode) {
         case 0x00U: opcode_00(); break; case 0x01U: opcode_01(); break; case 0x02U: opcode_02(); break; case 0x03U: opcode_03(); break; case 0x04U: opcode_04(); break; case 0x05U: opcode_05(); break; case 0x06U: opcode_06(); break; case 0x07U: opcode_07(); break; case 0x08U: opcode_08(); break; case 0x09U: opcode_09(); break; case 0x0AU: opcode_0A(); break; case 0x0BU: opcode_0B(); break; case 0x0CU: opcode_0C(); break; case 0x0DU: opcode_0D(); break; case 0x0EU: opcode_0E(); break; case 0x0FU: opcode_0F(); break;
@@ -31,11 +34,11 @@ Cycles OpcodeHandler::handle_opcode(u8 opcode) {
         case 0xF0U: opcode_F0(); break; case 0xF1U: opcode_F1(); break; case 0xF2U: opcode_F2(); break; case 0xF3U: opcode_F3(); break; case 0xF4U: opcode_F4(); break; case 0xF5U: opcode_F5(); break; case 0xF6U: opcode_F6(); break; case 0xF7U: opcode_F7(); break; case 0xF8U: opcode_F8(); break; case 0xF9U: opcode_F9(); break; case 0xFAU: opcode_FA(); break; case 0xFBU: opcode_FB(); break; case 0xFCU: opcode_FC(); break; case 0xFDU: opcode_FD(); break; case 0xFEU: opcode_FE(); break; case 0xFFU: opcode_FF(); break;
     }
 
-    return !cpu->branch_taken ? opcode_cycles[opcode] : opcode_cycles_branched[opcode];
+    return !gameboy->get_cpu().branch_taken ? opcode_cycles[opcode] : opcode_cycles_branched[opcode];
 }
 
 Cycles OpcodeHandler::handle_cb_opcode(u8 cb_opcode) {
-  log_trace("%s (CB 0x%x)", opcode_cb_names[cb_opcode].c_str(), cb_opcode);
+  log_trace("%s (CB 0x%x)\r\n", opcode_cb_names[cb_opcode].c_str(), cb_opcode);
 
   switch (cb_opcode) {
         case 0x00U: opcode_CB_00(); break; case 0x01U: opcode_CB_01(); break; case 0x02U: opcode_CB_02(); break; case 0x03U: opcode_CB_03(); break; case 0x04U: opcode_CB_04(); break; case 0x05U: opcode_CB_05(); break; case 0x06U: opcode_CB_06(); break; case 0x07U: opcode_CB_07(); break; case 0x08U: opcode_CB_08(); break; case 0x09U: opcode_CB_09(); break; case 0x0AU: opcode_CB_0A(); break; case 0x0BU: opcode_CB_0B(); break; case 0x0CU: opcode_CB_0C(); break; case 0x0DU: opcode_CB_0D(); break; case 0x0EU: opcode_CB_0E(); break; case 0x0FU: opcode_CB_0F(); break;
@@ -57,6 +60,10 @@ Cycles OpcodeHandler::handle_cb_opcode(u8 cb_opcode) {
     }
 
     return opcode_cycles_cb[cb_opcode];
+}
+
+void OpcodeHandler::set_gameboy(Gameboy *gb) {
+  this->gameboy = gb;
 }
 
 // clang-format on

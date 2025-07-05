@@ -8,8 +8,12 @@
 
 /* https://gbdev.io/pandocs/CPU_Registers_and_Flags.html */
 
+class Gameboy;
+
 class CPU {
  private:
+  Gameboy *gameboy = nullptr;
+
   Register8 a; /**< Register A */
   Register8 f; /**< Register F */
   Register8 b; /**< Register B */
@@ -33,17 +37,14 @@ class CPU {
   void write16(u16 address, u16 value);  // Write two bytes to memory
 
   // Instruction Execution
-  void execute(u8 opcode);     // Execute the instruction at PC
-  void execute_cb(u8 opcode);  // Execute CB-prefixed instructions
+  u32 execute(u8 opcode);     // Execute the instruction at PC
 
   // Interrupt Handling
   void handle_interrupts();  // Check and handle pending interrupts
   bool handle_interrupt(interrupts::flags flag, interrupts::vector vector, u8 fired_interrupts);
-  void request_interrupt(u8 interrupt_bit);  // Request a specific interrupt
 
  public:
-  MemoryController *mem_ctrl;
-
+ friend OpcodeHandler;
   Register8 interrupt_flag;
   Register8 interrupt_enabled_reg;
   bool interrupts_enabled = false;
@@ -57,10 +58,10 @@ class CPU {
   Register16 sp;   /**< Stack Pointer */
   Register16 pc;   /**< Program Counter */
 
-  CPU(MemoryController *mem_ctrl);
+  CPU();
 
   void init();
-  bool step();
+  u32 step();
 
   void set_zero(bool value);
   void set_subtract(bool value);
@@ -79,4 +80,12 @@ class CPU {
   u16 get_word_from_pc();
 
   bool is_condition(Condition condition);
+
+  void request_interrupt(u8 interrupt_bit);  // Request a specific interrupt
+
+  void set_gameboy(Gameboy *gb);
+
+  OpcodeHandler &get_opcode_handler() {
+    return opcode_handler;
+  }
 };

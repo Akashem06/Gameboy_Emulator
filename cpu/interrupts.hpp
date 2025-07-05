@@ -1,3 +1,5 @@
+#pragma once
+
 #include "common.hpp"
 
 /* All hardware interrupts available in the gameboy */

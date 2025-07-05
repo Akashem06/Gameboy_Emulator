@@ -1,6 +1,7 @@
 #include "cartridge.hpp"
 
 #include "files.hpp"
+#include "gameboy.hpp"
 #include "log.hpp"
 
 static std::string s_getTitle(std::vector<u8> &rom_data) {
@@ -316,4 +317,8 @@ void Cartridge::writeRAM(const Address address, u8 byte) {
   if (MEMORY_IN_RANGE(address, 0xA000U, 0xC000U) && ram_address < ram_banks.size()) {
     ram_banks[ram_address] = byte;
   }
+}
+
+void Cartridge::set_gameboy(Gameboy *gb) {
+  this->gameboy = gb;
 }

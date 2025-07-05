@@ -10,6 +10,8 @@
 #define CARTRIDGE_TITLE_LENGTH 15U
 #endif
 
+class Gameboy;
+
 namespace CartridgeHeader {
 const int entry_point = 0x100U;
 const int logo = 0x104U;
@@ -78,6 +80,7 @@ enum class RAMSize { NONE, SIZE_2KB, SIZE_8KB, SIZE_32KB, SIZE_64KB, SIZE_128KB,
 
 class Cartridge {
  private:
+  Gameboy *gameboy = nullptr;
   std::vector<u8> rom_data;
   std::vector<u8> ram_banks;
 
@@ -108,4 +111,6 @@ class Cartridge {
 
   u8 readRAM(const Address address);
   void writeRAM(const Address address, u8 byte);
+
+  void set_gameboy(Gameboy *gb);
 };

@@ -1,4 +1,5 @@
 #include "common.hpp"
+#include "framebuffer.hpp"
 
 class SDLUI {
  private:
@@ -13,4 +14,6 @@ class SDLUI {
 
   void handleEvents();
   bool abortEvent();
+
+  void renderFrame(Framebuffer &fb);
 };

@@ -7,8 +7,20 @@
 #include "common.hpp"
 #include "log.hpp"
 #include "sdl_ui.hpp"
+#include "sdl_ui_debugger.hpp"
 
-Gameboy::Gameboy() : cpu(&mem_ctrl), mem_ctrl(&cpu, &cartridge), cartridge() {
+Gameboy::Gameboy(Config *cfg) : cpu(), ppu(), mem_ctrl(), cartridge(), timer(), serial(), input() {
+  cpu.set_gameboy(this);
+  ppu.set_gameboy(this);
+  mem_ctrl.set_gameboy(this);
+  cartridge.set_gameboy(this);
+  timer.set_gameboy(this);
+  serial.set_gameboy(this);
+  input.set_gameboy(this);
+
+  cpu.get_opcode_handler().set_gameboy(this);
+
+  config = cfg;
   paused = false;
   running = false;
   ticks = 0U;
@@ -32,6 +44,7 @@ int Gameboy::run(int argc, char **argv) {
   log_info("Cart loaded..\n");
 
   SDLUI ui = SDLUI();
+  SDLUI_Debugger debugger_disiplay = SDLUI_Debugger();
 
   cpu.init();
 
@@ -39,18 +52,35 @@ int Gameboy::run(int argc, char **argv) {
   paused = false;
   ticks = 0;
 
+  const int cycles_per_frame = 70224;  // Each frame has 70224 machine cycles
+  int accumulated_cycles = 0;
+
   while (running) {
-    if (paused) {
-      delay_ms(10);
-      continue;
+    ui.handleEvents();
+
+    if (ui.abortEvent()) {
+      break;
     }
 
-    if (!cpu.step()) {
-      log_info("CPU Stopped\n");
-      return -4;
-    }
+    int cycles = cpu.step();
+  
+    timer.tick(cycles);
+    ppu.tick(cycles);
 
-    ticks++;
+    ticks += cycles;
+    accumulated_cycles += cycles;
+  
+    if (accumulated_cycles >= cycles_per_frame) {
+      // One frame complete -> render
+      ui.renderFrame(ppu.get_framebuffer());
+      debugger_disiplay.set_developer_name("Aryan Kashem's Gameboy");
+      debugger_disiplay.set_ly(ppu.get_lcd_ly().get());
+      debugger_disiplay.set_instruction_cycles(accumulated_cycles);
+      debugger_disiplay.set_status_text("Running");
+      debugger_disiplay.set_registers(cpu.af.get(), cpu.bc.get(), cpu.de.get(), cpu.hl.get(), cpu.sp.get(), cpu.pc.get());
+      debugger_disiplay.render();
+      accumulated_cycles -= cycles_per_frame;
+    }
   }
 
   return 0;

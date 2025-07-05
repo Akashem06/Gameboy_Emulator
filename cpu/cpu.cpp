@@ -1,5 +1,5 @@
 #include "cpu.hpp"
-
+#include "log.hpp"
 #include "gameboy.hpp"
 
 #define ZERO_FLAG_BIT_OFFSET 7U
@@ -8,9 +8,8 @@
 #define CARRY_FLAG_BIT_OFFSET 4U
 
 u8 CPU::fetch8() {
-  u8 return_val = mem_ctrl->read(pc.get());
+  u8 return_val = gameboy->get_memory_controller().read(pc.get());
   pc.increment();
-  cycles += 4U;
   return return_val;
 }
 
@@ -22,9 +21,7 @@ u16 CPU::fetch16() {
 }
 
 u8 CPU::read8(u16 address) {
-  u8 result = mem_ctrl->read(address);
-  cycles += 4U;
-
+  u8 result = gameboy->get_memory_controller().read(address);
   return result;
 }
 
@@ -36,8 +33,7 @@ u16 CPU::read16(u16 address) {
 }
 
 void CPU::write8(u16 address, u8 value) {
-  mem_ctrl->write(address, value);
-  cycles += 4;
+  gameboy->get_memory_controller().write(address, value);
 }
 
 void CPU::write16(u16 address, u16 value) {
@@ -45,17 +41,16 @@ void CPU::write16(u16 address, u16 value) {
   write8(address + 1U, static_cast<u8>((value >> 8U) & 0xFFU));
 }
 
-void CPU::execute(u8 opcode) {
+u32 CPU::execute(u8 opcode) {
+  Cycles instruction_cycles;
   if (opcode == 0xCB) {
-    u8 cb_opcode = get_byte_from_pc();
-    return execute_cb(cb_opcode);
+    u8 cb_opcode = fetch8(); // Fetch the CB opcode
+    instruction_cycles = opcode_handler.handle_cb_opcode(cb_opcode);
+  } else {
+    instruction_cycles = opcode_handler.handle_opcode(opcode);
   }
 
-  opcode_handler.handle_opcode(opcode);
-}
-
-void CPU::execute_cb(u8 opcode) {
-  opcode_handler.handle_cb_opcode(opcode);
+  return instruction_cycles;
 }
 
 bool CPU::handle_interrupt(interrupts::flags flag, interrupts::vector vector, u8 fired_interrupts) {
@@ -68,11 +63,6 @@ bool CPU::handle_interrupt(interrupts::flags flag, interrupts::vector vector, u8
   pc.set(static_cast<u16>(vector));
   interrupts_enabled = false;
 
-  /*
-   * Add cycles for interrupt overhead (total is 20 for push + jump)
-   * stack_push_16 adds 8, so we need 12 more.
-   */
-  cycles += 12U;
   return true;
 }
 
@@ -87,10 +77,14 @@ void CPU::handle_interrupts() {
     return;
   }
 
-  stack_push_16(pc.get());
-
+  // Acknowledge interrupt by setting IME to false (interrupts are disabled after one is handled)
+  interrupts_enabled = false;
+  
   bool handled_interrupt = false;
 
+  // Interrupts are prioritized. The order here matters.
+  // VBlank (bit 0) -> LCDC Stat (bit 1) -> Timer (bit 2) -> Serial (bit 3) -> Joypad (bit 4)
+  log_debug("fired_interrupts: %u\r\n", fired_interrupts);
   handled_interrupt = handle_interrupt(interrupts::flags::vblank, interrupts::vector::vblank, fired_interrupts);
   if (handled_interrupt) {
     return;
@@ -118,10 +112,9 @@ void CPU::handle_interrupts() {
 }
 
 u8 CPU::get_byte_from_pc() {
-  u8 byte = mem_ctrl->read(pc.get());
+  u8 byte = gameboy->get_memory_controller().read(pc.get());
   pc.increment();
-
-  return byte;
+  return byte; // No cycle addition here, as fetch8() is the primary byte fetch mechanism
 }
 
 i8 CPU::get_signed_byte_from_pc() {
@@ -151,6 +144,9 @@ bool CPU::is_condition(Condition condition) {
       break;
     case Condition::NZ:
       should_branch = !get_zero();
+      break;
+    default: // Should not happen
+      should_branch = false;
       break;
   }
 
@@ -233,28 +229,24 @@ bool CPU::get_carry() {
 void CPU::stack_push_16(u16 value) {
   /* Stack grows downwards */
   sp.decrement();
-  mem_ctrl->write(sp.get(), static_cast<u8>((value >> 8U) & 0xFFU));
-  cycles += 4U;
+  gameboy->get_memory_controller().write(sp.get(), static_cast<u8>((value >> 8U) & 0xFFU));
 
   sp.decrement();
-  mem_ctrl->write(sp.get(), static_cast<u8>(value & 0xFFU));
-  cycles += 4U;
+  gameboy->get_memory_controller().write(sp.get(), static_cast<u8>(value & 0xFFU));
 }
 
 u16 CPU::stack_pop_16() {
   /* Stack pops upwards */
-  u16 low_byte = mem_ctrl->read(sp.get());
-  cycles += 4U;
+  u16 low_byte = gameboy->get_memory_controller().read(sp.get());
   sp.increment();
 
-  u16 high_byte = mem_ctrl->read(sp.get());
-  cycles += 4U;
+  u16 high_byte = gameboy->get_memory_controller().read(sp.get());
   sp.increment();
 
   return (high_byte << 8U) | low_byte;
 }
 
-CPU::CPU(MemoryController *mem_ctrl) : mem_ctrl(mem_ctrl), opcode_handler(this), af(a, f), bc(b, c), de(d, e), hl(h, l) {}
+CPU::CPU() : opcode_handler(), af(a, f), bc(b, c), de(d, e), hl(h, l) {}
 
 void CPU::init() {
   af.set(0x01B0);
@@ -269,15 +261,18 @@ void CPU::init() {
   branch_taken = false;
   cycles = 0U;
 
-  interrupt_flag.set(0x00U);
+  interrupt_flag.set(0xE1U);
   interrupt_enabled_reg.set(0x00U);
+  
+  log_debug("PC On init: %u\r\n", pc.get());
 }
 
-bool CPU::step() {
+u32 CPU::step() {
+  branch_taken = false;
+
   if (halted) {
     u8 pending_interrupts = interrupt_flag.get() & interrupt_enabled_reg.get();
     if (pending_interrupts) {
-      /* Un-HALT if any interrupt is pending */
       halted = false;
     } else {
       cycles += 4;
@@ -285,9 +280,13 @@ bool CPU::step() {
     }
   }
 
-  u8 opcode = fetch8();
-  execute(opcode);
+  // Handle interrupts before fetching the next opcode (IME check is inside handle_interrupts)
   handle_interrupts();
 
-  return true;
+  u8 opcode = fetch8(); // Fetching the opcode increments PC and adds 4 cycles
+  return execute(opcode);      // This will now add the remaining cycles for the instruction
+}
+
+void CPU::set_gameboy(Gameboy *gb) {
+  this->gameboy = gb;
 }

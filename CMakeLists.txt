@@ -5,6 +5,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(SDL2 REQUIRED)
+find_package(SDL2_image REQUIRED)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(SDL2_TTF REQUIRED SDL2_ttf)
 
@@ -18,6 +19,7 @@ include_directories(
   ${PROJECT_SOURCE_DIR}/utils
   ${PROJECT_SOURCE_DIR}/video
   ${PROJECT_SOURCE_DIR}/mem
+  ${PROJECT_SOURCE_DIR}/peripheral
 )
 
 ######################## Source/Header files for each components ########################
@@ -42,6 +44,9 @@ file(GLOB VIDEO_HEADERS "${PROJECT_SOURCE_DIR}/video/*.hpp")
 file(GLOB MEM_SOURCES "${PROJECT_SOURCE_DIR}/mem/*.cpp")
 file(GLOB MEM_HEADERS "${PROJECT_SOURCE_DIR}/mem/*.hpp")
 
+file(GLOB PERIPHERAL_SOURCES "${PROJECT_SOURCE_DIR}/peripheral/*.cpp")
+file(GLOB PERIPHERAL_HEADERS "${PROJECT_SOURCE_DIR}/peripheral/*.hpp")
+
 ################################## Combine all sources ##################################
 set(SOURCES
     ${MAIN_SOURCES}
@@ -51,6 +56,7 @@ set(SOURCES
     ${UTILS_SOURCES}
     ${VIDEO_SOURCES}
     ${MEM_SOURCES}
+    ${PERIPHERAL_SOURCES}
 )
 
 set(HEADERS
@@ -61,10 +67,11 @@ set(HEADERS
     ${UTILS_HEADERS}
     ${VIDEO_HEADERS}
     ${MEM_HEADERS}
+    ${PERIPHERAL_HEADERS}
 )
 
 add_executable(gameboy_emulator ${SOURCES} ${HEADERS})
-target_link_libraries(gameboy_emulator PRIVATE ${SDL2_LIBRARIES} ${SDL2_TTF_LIBRARIES})
+target_link_libraries(gameboy_emulator PRIVATE ${SDL2_LIBRARIES} ${SDL2_TTF_LIBRARIES} ${SDL2_IMAGE_LIBRARIES})
 
 target_compile_options(gameboy_emulator PRIVATE -Wall -Wextra -Wpedantic)
 
@@ -78,3 +85,27 @@ add_custom_target(format
     COMMAND find .. -type f -name "*.hpp" -exec clang-format -i -style=file {} +
     COMMENT "Formatting source files..."
 )
+
+################################## Testing ###################################
+enable_testing()
+
+set(BLARGG_TEST_ROM_DIR "${CMAKE_SOURCE_DIR}/ROM/blargg_tests")
+file(GLOB BLARGG_TEST_ROMS "${BLARGG_TEST_ROM_DIR}/*")
+
+foreach(TEST_ROM ${BLARGG_TEST_ROMS})
+    get_filename_component(TEST_NAME "${TEST_ROM}" NAME_WE)
+
+    add_test(
+        NAME "blargg_${TEST_NAME}"
+        COMMAND gameboy_emulator
+                "${TEST_ROM}"
+                --headless
+                --print-serial-output
+                --exit-on-infinite-jr
+    )
+
+    set_tests_properties(blargg_${TEST_NAME} PROPERTIES
+        PASS_REGULAR_EXPRESSION "Passed"
+        FAIL_REGULAR_EXPRESSION "Failed"
+    )
+endforeach()

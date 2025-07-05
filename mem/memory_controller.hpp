@@ -5,6 +5,7 @@
 #include "cartridge.hpp"
 #include "common.hpp"
 #include "mem.h"
+#include "register.hpp"
 
 /*--------------------- CATRIDGE ROM ---------------------*/
 /* 0x0000 - 0x3FFF : ROM Bank 0. */
@@ -33,19 +34,25 @@ class CPU;
 
 class MemoryController {
  private:
-  CPU *cpu;
-  Cartridge *cartridge;
+  Gameboy *gameboy = nullptr;
+  Register8 disable_boot_rom_switch;
 
   std::vector<u8> work_ram;
   std::vector<u8> oam_ram;
   std::vector<u8> high_ram;
+  std::vector<u8> vram;
+
+  bool boot_rom_active();
+  void dma_transfer(u8 byte);
 
  public:
-  MemoryController(CPU *cpu, Cartridge *cartridge);
+  MemoryController();
 
   u8 read(const Address address);
   void write(const Address address, u8 byte);
 
   u8 read_io(const Address address);
   void write_io(const Address address, u8 byte);
+
+  void set_gameboy(Gameboy *gb);
 };

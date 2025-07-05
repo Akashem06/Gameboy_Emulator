@@ -4,16 +4,25 @@
 #include "framebuffer.hpp"
 #include "memory_controller.hpp"
 
+class PPU;
+
 class TileRenderer {
- public:
-  TileRenderer(MemoryController *mem_ctrl, Framebuffer *framebuffer);
-
-  void render_scanline(u8 line);
-
  private:
-  MemoryController *mem_ctrl;
-  Framebuffer *framebuffer;
+  PPU *ppu = nullptr;
 
   void render_background(u8 line);
   void render_window(u8 line);
+
+ public:
+  Register8 scy;  // 0xFF42 - Scroll Y
+  Register8 scx;  // 0xFF43 - Scroll X
+  Register8 wy;   // 0xFF4A - Window Y
+  Register8 wx;   // 0xFF4B - Window X
+  Register8 bgp;  // 0xFF47 - Background Palette
+
+  TileRenderer();
+
+  void render_scanline(u8 line);
+
+  void set_ppu(PPU *ppu);
 };

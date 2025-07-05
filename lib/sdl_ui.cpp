@@ -16,6 +16,13 @@ SDL_Renderer *sdlDebugRenderer;
 SDL_Texture *sdlDebugTexture;
 SDL_Surface *debugScreen;
 
+static const uint32_t gameboy_palette[4] = {
+  0xFFFFFFFF,  // White
+  0xAAAAAAFF,  // Light Gray
+  0x555555FF,  // Dark Gray
+  0x000000FF   // Black
+};
+
 SDLUI::SDLUI() {
   SDL_Init(SDL_INIT_VIDEO);
   TTF_Init();
@@ -41,15 +48,8 @@ SDLUI::SDLUI() {
 
 SDLUI::~SDLUI() {
   SDL_DestroyTexture(sdlTexture);
-  SDL_DestroyRenderer(sdlDebugRenderer);
-  SDL_DestroyWindow(sdlDebugWindow);
-  SDL_FreeSurface(debugScreen);
-
-  SDL_DestroyTexture(sdlDebugTexture);
   SDL_DestroyRenderer(sdlRenderer);
   SDL_DestroyWindow(sdlWindow);
-  SDL_FreeSurface(screen);
-
   SDL_Quit();
 }
 
@@ -58,11 +58,6 @@ void SDLUI::handleEvents() {
 
   while (SDL_PollEvent(&event)) {
     switch (event.type) {
-      case SDL_WINDOWEVENT:
-        if (event.window.event == SDL_WINDOWEVENT_CLOSE) {
-          abort_event = true;
-        }
-        break;
       case SDL_QUIT:
         abort_event = true;
         break;
@@ -72,4 +67,25 @@ void SDLUI::handleEvents() {
 
 bool SDLUI::abortEvent() {
   return abort_event;
+}
+
+void SDLUI::renderFrame(Framebuffer &fb) {
+  void *pixels;
+  int pitch;
+  SDL_LockTexture(sdlTexture, nullptr, &pixels, &pitch);
+
+  uint32_t *dst = (uint32_t *)pixels;
+
+  for (int y = 0; y < SCREEN_HEIGHT; ++y) {
+    for (int x = 0; x < SCREEN_WIDTH; ++x) {
+      uint8_t color_index = fb.get_pixel(x, y);
+      dst[y * (pitch / 4) + x] = gameboy_palette[color_index];
+    }
+  }
+
+  SDL_UnlockTexture(sdlTexture);
+
+  SDL_RenderClear(sdlRenderer);
+  SDL_RenderCopy(sdlRenderer, sdlTexture, nullptr, nullptr);
+  SDL_RenderPresent(sdlRenderer);
 }

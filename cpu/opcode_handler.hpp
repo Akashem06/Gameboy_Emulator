@@ -6,11 +6,11 @@
 #include "register.hpp"
 #include "rst.hpp"
 
-class CPU;
+class Gameboy;
 
 class OpcodeHandler {
  private:
-  CPU *cpu;
+  Gameboy *gameboy;
 
   void opcode_nop();
 
@@ -681,8 +681,10 @@ class OpcodeHandler {
   void opcode_CB_FF();
 
  public:
-  OpcodeHandler(CPU *cpu);
+  OpcodeHandler();
 
   Cycles handle_opcode(u8 opcode);
   Cycles handle_cb_opcode(u8 cb_opcode);
+
+  void set_gameboy(Gameboy *gb);
 };
